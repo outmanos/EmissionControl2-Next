@@ -11,3 +11,15 @@ url = https://github.com/AlloSphere-Research-Group/al_ext
 [submodule "ecSource/external/nativefiledialog"]
 path = ecSource/external/nativefiledialog
 url = https://github.com/mlabbe/nativefiledialog
+[submodule "vendor/iPlug2"]
+	path = vendor/iPlug2
+	url = https://github.com/iPlug2/iPlug2
+[submodule "vendor/vst3sdk"]
+	path = vendor/vst3sdk
+	url = https://github.com/steinbergmedia/vst3sdk.git
+[submodule "vendor/clap"]
+	path = vendor/clap
+	url = https://github.com/free-audio/clap.git
+[submodule "vendor/clap-helpers"]
+	path = vendor/clap-helpers
+	url = https://github.com/free-audio/clap-helpers.git

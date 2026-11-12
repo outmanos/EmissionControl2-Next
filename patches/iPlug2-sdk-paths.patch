@@ -1,0 +1,49 @@
+diff --git a/Scripts/cmake/CLAP.cmake b/Scripts/cmake/CLAP.cmake
+index c54284af7..0f07919e1 100644
+--- a/Scripts/cmake/CLAP.cmake
++++ b/Scripts/cmake/CLAP.cmake
+@@ -12,8 +12,13 @@ include(${CMAKE_CURRENT_LIST_DIR}/IPlug.cmake)
+ 
+ if(NOT TARGET iPlug2::CLAP)
+   # Define SDK paths
+-  set(CLAP_SDK_DIR ${IPLUG_DEPS_DIR}/CLAP_SDK)
+-  set(CLAP_HELPERS_DIR ${IPLUG_DEPS_DIR}/CLAP_HELPERS)
++  # Overridable so the SDKs can live outside iPlug2 (see the fork's CMakeLists).
++  if(NOT CLAP_SDK_DIR)
++    set(CLAP_SDK_DIR ${IPLUG_DEPS_DIR}/CLAP_SDK)
++  endif()
++  if(NOT CLAP_HELPERS_DIR)
++    set(CLAP_HELPERS_DIR ${IPLUG_DEPS_DIR}/CLAP_HELPERS)
++  endif()
+ 
+   # Check if CLAP SDK exists (must have include dir, not just placeholder)
+   if(NOT EXISTS ${CLAP_SDK_DIR}/include)
+diff --git a/Scripts/cmake/VST3.cmake b/Scripts/cmake/VST3.cmake
+index cd6c3ceea..191d33838 100644
+--- a/Scripts/cmake/VST3.cmake
++++ b/Scripts/cmake/VST3.cmake
+@@ -12,7 +12,10 @@ include(${CMAKE_CURRENT_LIST_DIR}/IPlug.cmake)
+ 
+ if(NOT TARGET iPlug2::VST3)
+   # Define SDK path
+-  set(VST3_SDK_DIR ${IPLUG_DEPS_DIR}/VST3_SDK)
++  # Overridable so the SDK can live outside iPlug2 (see the fork's CMakeLists).
++  if(NOT VST3_SDK_DIR)
++    set(VST3_SDK_DIR ${IPLUG_DEPS_DIR}/VST3_SDK)
++  endif()
+ 
+   # Check if VST3 SDK exists
+   if(NOT EXISTS ${VST3_SDK_DIR})
+diff --git a/common-win.props b/common-win.props
+index 02ab3b793..9e14cb8bd 100644
+--- a/common-win.props
++++ b/common-win.props
+@@ -81,7 +81,7 @@
+   </PropertyGroup>
+   <ItemDefinitionGroup>
+     <ClCompile>
+-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <PreprocessorDefinitions>$(ALL_DEFS);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <DisableSpecificWarnings>4996;4250;4018;4267;4068;26451;26812</DisableSpecificWarnings>
+       <AdditionalIncludeDirectories>$(WDL_PATH);$(IPLUG_PATH);$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

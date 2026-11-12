@@ -1,0 +1,140 @@
+diff --git a/external/rtaudio b/external/rtaudio
+--- a/external/rtaudio
++++ b/external/rtaudio
+@@ -1 +1 @@
+-Subproject commit d27f257b4bc827e4152cdc4d69a2e22084204afd
++Subproject commit d27f257b4bc827e4152cdc4d69a2e22084204afd-dirty
+diff --git a/external/rtmidi b/external/rtmidi
+--- a/external/rtmidi
++++ b/external/rtmidi
+@@ -1 +1 @@
+-Subproject commit cc887191c3b4cb6697aeba5536d9f4eb423090aa
++Subproject commit cc887191c3b4cb6697aeba5536d9f4eb423090aa-dirty
+diff --git a/include/al/scene/al_DynamicScene.hpp b/include/al/scene/al_DynamicScene.hpp
+index 78077ead..fdb4bc0b 100644
+--- a/include/al/scene/al_DynamicScene.hpp
++++ b/include/al/scene/al_DynamicScene.hpp
+@@ -251,7 +251,9 @@ public:
+   Pose &listenerPose() { return mListenerPose; }
+   void listenerPose(Pose &pose) { mListenerPose = pose; }
+ 
++#ifndef AL_NO_GRAPHICS
+   virtual void render(Graphics &g) final;
++#endif
+   virtual void render(AudioIOData &io) final;
+ 
+   /**
+diff --git a/include/al/scene/al_PolySynth.hpp b/include/al/scene/al_PolySynth.hpp
+index cef0f122..b2709d78 100644
+--- a/include/al/scene/al_PolySynth.hpp
++++ b/include/al/scene/al_PolySynth.hpp
+@@ -48,7 +48,9 @@
+ #include <typeindex>
+ #include <vector>
+ 
++#ifndef AL_NO_GRAPHICS
+ #include "al/graphics/al_Graphics.hpp"
++#endif
+ #include "al/io/al_AudioIOData.hpp"
+ #include "al/io/al_File.hpp"
+ #include "al/types/al_SingleRWRingBuffer.hpp"
+@@ -172,10 +174,12 @@ the other
+    */
+   virtual void onProcess(AudioIOData & /*io*/) {}
+ 
++#ifndef AL_NO_GRAPHICS
+   /**
+    * @brief Override this function to define graphics for this synth
+    */
+   virtual void onProcess(Graphics & /*g*/) {}
++#endif
+ 
+   /**
+    * @brief Override this function to update internal state, e.g. from an
+@@ -500,10 +504,12 @@ public:
+    */
+   virtual void render(AudioIOData &io);
+ 
++#ifndef AL_NO_GRAPHICS
+   /**
+    * @brief render graphics for all active voices
+    */
+   virtual void render(Graphics &g);
++#endif
+ 
+   /**
+    * @brief update internal state for all voices.
+diff --git a/include/al/scene/al_SynthSequencer.hpp b/include/al/scene/al_SynthSequencer.hpp
+index 11c97319..f3143633 100644
+--- a/include/al/scene/al_SynthSequencer.hpp
++++ b/include/al/scene/al_SynthSequencer.hpp
+@@ -194,7 +194,9 @@ public:
+   void render(AudioIOData &io);
+ 
+   /// Insert this function within the graphics callback
++#ifndef AL_NO_GRAPHICS
+   void render(Graphics &g);
++#endif
+ 
+   void update(double dt);
+ 
+diff --git a/src/scene/al_DynamicScene.cpp b/src/scene/al_DynamicScene.cpp
+index 2a2ae296..551a3bb7 100644
+--- a/src/scene/al_DynamicScene.cpp
++++ b/src/scene/al_DynamicScene.cpp
+@@ -119,6 +119,7 @@ void DynamicScene::prepare(AudioIOData &io) {
+   m_internalAudioConfigured = true;
+ }
+ 
++#ifndef AL_NO_GRAPHICS
+ void DynamicScene::render(Graphics &g) {
+   if (mDrawWorldMarker) {
+     g.color(0.7);
+@@ -169,6 +170,7 @@ void DynamicScene::render(Graphics &g) {
+     processInactiveVoices();
+   }
+ }
++#endif
+ 
+ void DynamicScene::render(AudioIOData &io) {
+   if (!m_internalAudioConfigured) {
+diff --git a/src/scene/al_PolySynth.cpp b/src/scene/al_PolySynth.cpp
+index e0566bef..2fe43ab6 100644
+--- a/src/scene/al_PolySynth.cpp
++++ b/src/scene/al_PolySynth.cpp
+@@ -564,6 +564,7 @@ void PolySynth::render(AudioIOData &io) {
+   }
+ }
+ 
++#ifndef AL_NO_GRAPHICS
+ void PolySynth::render(Graphics &g) {
+   if (mMasterMode == TimeMasterMode::TIME_MASTER_GRAPHICS) {
+     processVoices();
+@@ -583,6 +584,7 @@ void PolySynth::render(Graphics &g) {
+     processInactiveVoices();
+   }
+ }
++#endif
+ 
+ void PolySynth::update(double dt) {
+   if (mMasterMode == TimeMasterMode::TIME_MASTER_UPDATE) {
+diff --git a/src/scene/al_SynthSequencer.cpp b/src/scene/al_SynthSequencer.cpp
+index b5752c25..bcd86575 100644
+--- a/src/scene/al_SynthSequencer.cpp
++++ b/src/scene/al_SynthSequencer.cpp
+@@ -22,6 +22,7 @@ void SynthSequencer::render(AudioIOData &io) {
+   mPolySynth->render(io);
+ }
+ 
++#ifndef AL_NO_GRAPHICS
+ void SynthSequencer::render(Graphics &g) {
+   if (mMasterMode == TimeMasterMode::TIME_MASTER_GRAPHICS) {
+     assert(mFps > 0);
+@@ -31,6 +32,7 @@ void SynthSequencer::render(Graphics &g) {
+   }
+   mPolySynth->render(g);
+ }
++#endif
+ 
+ void SynthSequencer::update(double dt) {
+   if (mMasterMode == TimeMasterMode::TIME_MASTER_UPDATE) {

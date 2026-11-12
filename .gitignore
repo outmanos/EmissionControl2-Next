@@ -13,3 +13,20 @@ imgui.ini
 .vs/
 sc/
 valgrind-output.txt
+
+# EmissionControl2-Next generated paths
+build-deps/
+tests/build/
+ecSource/build/
+ecSource/bin/
+*.obj
+
+# locally fetched, not tracked
+vendor/wil/
+
+# build output
+build-trace/
+build/
+out/
+*.pdb
+*.ilk

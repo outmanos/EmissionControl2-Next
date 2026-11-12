@@ -1,178 +1,93 @@
-# EmissionControl2
+# EmissionControl2-Next
 
-EmissionControl2 (EC2) is a standalone interactive real-time application for granular synthesis and sound file granulation. It is available for OSX, Linux, and Windows. 
-<br><br>
+A fork of [EmissionControl2](https://github.com/EmissionControl2/EmissionControl2), Curtis Roads' granular synthesis instrument, adding DAW plugin support.
 
-# [DOWNLOAD EMISSIONCONTROL2](https://github.com/EmissionControl2/EmissionControl2/releases/latest)
+## What this adds
 
-<br><br>
-![](docs/EC2_lightmode.png "This is what EC2 looks like")
+Plugin builds for the iPlug2 targets (VST3, AU, AUv3, AAX and CLAP) plus the original standalone application, on macOS, Windows and Linux.
 
-Features include:
+The granular engine is unchanged. The new layers give it MIDI note input, polyphonic voices and pitch tracking, while the original free-running granular mode stays available.
 
-- Per-grain signal processing (envelope, waveform, amplitude, frequency, spatial position, filter center frequency and resonance)
-- Granulation of multiple sound files simultaneously
-- Up to 2048 simultaneous grains
-- Synchronous and asynchronous grain emission
-- Intermittency control
-- Modulation control of all parameters with six LFOs (bipolar or unipolar waveforms)
-- Real-time display of peak amplitude, active grains, waveform, scan range, scanner, and grain emission
-- Scalable graphical user interface (GUI) and font size
-- Easy mapping of parameters to any MIDI/OSC continuous controller
-- Algorithmic control of granular processes via OSC scripts
-- Unique filter design optimized for per-grain synthesis
-- Unlimited user presets with smooth interpolation for gestural design
-- Open source code and free to download and use
+Status: pre-alpha but playable. VST3, CLAP and the standalone app all build and run. All seventy-one EC2 parameters are exposed, including modulation depths and the six LFOs.
 
-## Videos
-### Controlling EmissionControl2 (lecture tutorial)
-[![](docs/ControllingEmissionControl2_Screenshot.png)](https://vimeo.com/483296353)
+What is done and what is next is tracked in [ROADMAP.md](ROADMAP.md).
 
-### What people are doing with it
-<a href="https://www.facebook.com/708680357/videos/10158420236745358/"><img src="docs/devineVideo_Screenshot.png" width="400" /></a>
-<a href="https://www.youtube.com/watch?v=dCS2G6ASHUc"><img src="docs/BartonVideo_Screenshot.png" width="400" /></a>
+## Upstream bugs
 
-## Mailing Lists
+Two defects in the pinned dependencies stop the project building with current tooling:
 
-### New releases, major bug fixes, and other big news (low-volume list)
-https://lists.sr.ht/~rondo/emissioncontrol2-announce
+- `allolib/src/ui/al_Composition.cpp` uses `std::chrono::high_resolution_clock` without including
+  `<chrono>`, which older MSVC headers pulled in transitively.
+- `oscpack/osc/OscHostEndianness.h` fails to compile unless an endianness macro is defined.
 
-To subscribe, send a blank email to: ~rondo/emissioncontrol2-announce+subscribe@lists.sr.ht
+Both are worked around with compiler defines in the build, and should be fixed upstream rather than carried here.
 
-### Discussion, questions, ideas, tips, sounds and video, and other general postings (higher-volume list; anyone can post here)
-https://lists.sr.ht/~rondo/emissioncontrol2-discuss
-
-To subscribe, send a blank email to: ~rondo/emissioncontrol2-discuss+subscribe@lists.sr.ht
-
-To post to this list, send your post to: ~rondo/emissioncontrol2-discuss@lists.sr.ht
+Upstream also declares `cmake_minimum_required(VERSION 3.0)` (Gamma declares 2.8), which CMake 4
+rejects; the build passes `-DCMAKE_POLICY_VERSION_MINIMUM=3.5`.
 
 ## Building
-### Debian Linux
 
-#### First, check the releases page to see if the pre-compiled installers work for you: https://github.com/EmissionControl2/EmissionControl2/releases/latest
+```powershell
+tools\bootstrap.ps1
+cmake -S ecSource -B ecSource\build\release -G "Visual Studio 18 2026" -A x64 `
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 `
+  -DCMAKE_CXX_FLAGS="/FIchrono /wd4244 /DOSC_HOST_LITTLE_ENDIAN" `
+  -DSNDFILE_LIBRARY=<repo>/build-deps/libsndfile/lib/sndfile.lib `
+  -DSNDFILE_INCLUDE_DIR=<repo>/build-deps/libsndfile/include
+cmake --build ecSource\build\release --config Release
+```
 
-- This project uses cmake to build so if you don't have cmake then install it (Minimum version: 3.13) and make sure your c and c++ compilers are defined in your environment.
+`tools\bootstrap.ps1` checks out the pinned submodules, applies the diffs in `patches/`, and builds
+`nfd.lib`. It is safe to run repeatedly.
 
-- Run the following in a terminal to install the necessary libraries for building:
+libsndfile is not vendored. Put the win64 package's `sndfile.lib`, `sndfile.h` and `sndfile.dll` under
+`build-deps/libsndfile/`, and copy the DLL again as `libsndfile-1.dll`, the name EC2's
+`CMakeLists.txt` copies.
 
-`sudo apt install libgtk-3-dev libasound2-dev libsndfile1-dev libfftw3-dev libjack-dev`
- 
-- git clone the repository and cd into the directory:
+### The plugin
 
-`git clone https://github.com/EmissionControl2/EmissionControl2.git`
+The same CMake builds the plugin targets. From the repository root:
 
-`cd EmissionControl2/ecSource`
+```powershell
+tools\bootstrap.ps1
+cmake -S . -B build -G "Visual Studio 18 2026" -A x64 `
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 `
+  -DFETCHCONTENT_SOURCE_DIR_WIL=<repo>/vendor/wil `
+  -DSNDFILE_LIBRARY=<libsndfile>/lib/sndfile.lib `
+  -DSNDFILE_INCLUDE_DIR=<libsndfile>/include
+cmake --build build --config Release --target EC2Next-vst3 EC2Next-clap EC2Next-app
+```
 
-- Run the configure script. You may add the argument "withjack" if you want JACK support. Note that compiling with JACK support can cause issues with Pipewire. If your system runs Pipewire, it is recommended to not compile with jack support.
+Artifacts land in `build\out`: `EC2Next.vst3`, `EC2Next.clap` and `EC2Next.exe`, each with `sndfile.dll` beside it. The DLL is delay-loaded from the plugin's own directory, so a host's DLL search order cannot break it.
 
-`./scripts/configure.sh` --or-- (for jack support) `./scripts/configure.sh withjack`
+The VST3 SDK, CLAP SDK and CLAP helpers are pinned submodules under `vendor/`, so the build needs nothing from outside the repository.
 
-- Run the build script:
+### Engine tests
 
-`./scripts/build.sh`
+```powershell
+tests\build_smoke.cmd smoke_ec2.cpp
+tests\build_smoke.cmd bench_voices.cpp bench.exe
+tests\build_prog.cmd stress.exe tests\adapter_stress.cpp src\engine\EC2Adapter.cpp
+```
 
-- You can install ec2 by running the following script:
+## Repository layout
 
-`sudo ./scripts/install_linux.sh` (this will put the binary in /usr/bin and set up resources in the paths where EC2 expects them to be)
+```
+ecSource/            upstream EC2 application
+externalResources/   upstream resources
+docs/                upstream documentation
+src/engine/          adapter between the engine and the plugin layer
+src/instrument/      note-to-cloud voice, voice pool
+tests/               engine tests and build scripts
+patches/             build fixes for current CMake and MSVC
+tools/               bootstrap and nativefiledialog build scripts
+```
 
-To undo the files installed with install_linux.sh script, I've included the `scripts/uninstall_linux.sh` script as well.
+## Tracking upstream
 
-### Arch Linux
+`master` mirrors upstream and is never committed to; `next` carries this work.
 
-- Must have cmake (3.13 or later), git, and base-devel packages installed.
-
-`git clone https://github.com/EmissionControl2/EmissionControl2.git`
-
-`cd EmissionControl2/ecSource`
-
-Run the configure script. You may add the argument "withjack" if you want JACK support. Note that compiling with JACK support can cause issues with Pipewire. If your system runs Pipewire, it is recommended to not compile with jack support.
-
-`./scripts/configure.sh` --or-- (for jack support) `./scripts/configure.sh withjack`
-
-- Run the build script:
-
-`./scripts/build.sh`
-
-- You can install ec2 by running the following script:
-
-`sudo ./scripts/install_linux.sh` (this will put the binary in /usr/bin and set up resources in the paths where EC2 expects them to be)
-
-To undo the files installed with install_linux.sh script, I've included the `scripts/uninstall_linux.sh` script as well.
-
-
-### OS X
-
-#### First, check the releases page to see if the pre-compiled installers work for you: https://github.com/EmissionControl2/EmissionControl2/releases/latest
-
-You must have cmake installed (version 3.10 or later), and Xcode (hopefully we can get rid of this dependency soon).
-
-You'll also need a few libraries installed: libsndfile flac libogg libvorbis (If you have homebrew, you can get them all with `brew install libsndfile flac libogg libvorbis`)
-
-- First, clone the repo:
-
-`git clone https://github.com/EmissionControl2/EmissionControl2.git`
-
-- cd into EmissionControl2/ecSource
-
-`cd EmissionControl2/ecSource`
-
-- run configure script:
-
-`./scripts/configure.sh`
-
-- run build script:
-
-`./scripts/build.sh`
-
-- EmissionControl2 is located in `EmissionControl2/ecSource/bin/`
-
-### Windows (Visual Studio)
-
-For installation through Visual Studio (taken from the allolib repo: https://github.com/AlloSphere-Research-Group/allolib):
-
-    Install Visual Studio 2017 [ec2 devs: 2019 seems to work as well] Community Edition from https://visualstudio.microsoft.com/downloads/
-
-    During installation options:
-
-    a. Install "Desktop development with C++" workload
-
-    b. Install Individual components: C++/CLI support, Git for Windows, Visual C++ Tools for Cmake
-
-Install libsndfile: Aim your browser at http://www.mega-nerd.com/libsndfile/#Download. Download and install the 64-bit version: libsndfile-1.0.xx-w64-setup.exe.
-    - Install this at the default location.
-
-#### Compile Emission Control
-- Note that you need Visual Studio installed for the below scripts to work.
-
-- Clone the repo using the git bash terminal:
-
-`git clone https://github.com/EmissionControl2/EmissionControl2.git`
-
-- Open Visual Studio pointed at the directory `EmissionControl2\`
-
-- In Visual Studio, open the Developer Power Shell.
-
-- When first running the sh scripts, Visual Studio will ask what program would you like to open this file with. Choose `Git Bash`.
-
-- Configure the project:
-
-`.\ecSource\scripts\configure.sh`
-
-- The above step will initially fail. This reason for this is that NFD is using an old version of Visual Studio (2010). To fix this problem, do the following.
-     - In file explorer go to the folder `EmissionControl2\ecSource\external\nativefiledialog\build\vs2010\`
-     - Open `NativeFileDialog.sln` in Visual Studio.
-     - Double click on `Solution 'NativeFileDialog' (5 of 5 projects)` in the vertical window on the right side.
-     - Agree to updating this project to the newest toolchain.
-     - Run `.\ecSource\scripts\configure.sh` again from the Emission Control 2 Visual Studio Project.
-     - Note that the following will only have to be done once per git clone.
-     - Sidenote: If you have a better, more stable way, let me know -- jack
-
-
-- Compile the project
-`.\ecSource\scripts\build.sh`
-
-
-
-
-
-
+```powershell
+git fetch upstream
+git merge upstream/master
+```
